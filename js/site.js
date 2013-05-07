@@ -3,11 +3,9 @@ var osmStream = require('osm-stream'),
     moment = require('moment'),
     _ = require('underscore');
 
-var bboxString = ["-90.0", "-180.0", "90.0", "180.0"];
-if (location.hash) {
-    bboxString = location.hash.replace('#', '').split(',');
-}
-
+var bboxString = ["42.5", "27.58", "78.0", "180.0"];
+var excludeChinaString = ["42.0", "49.46", "49.26", "130.87"];
+var excludeJapanString = ["42.0", "138.83", "45.65", "145.35"];
 var ignore = ['bot-mode'];
 var BING_KEY = 'Arzdiw4nlOJzRwOz__qailc8NiR31Tt51dN2D7cm57NrnceZnCpgOkmJhNpGoppU';
 
@@ -17,7 +15,7 @@ var map = L.map('map', {
     scrollWheelZoom: false,
     doubleClickZoom: false,
     boxZoom: false
-}).setView([51.505, -0.09], 13);
+}).setView([55.75, 37.61], 14);
 
 var overview_map = L.map('overview_map', {
     zoomControl: false,
@@ -26,14 +24,14 @@ var overview_map = L.map('overview_map', {
     scrollWheelZoom: false,
     doubleClickZoom: false,
     boxZoom: false
-}).setView([51.505, -0.09], 1);
+}).setView([55.75, 37.61], 1);
 
 var bing = new L.BingLayer(BING_KEY, 'Aerial').addTo(map);
 
-var osm = new L.TileLayer('http://a.tiles.mapbox.com/v3/saman.map-f8nluy8d/{z}/{x}/{y}.jpg70', {
-    minZoom: 4,
+var osm = new L.TileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    minZoom: 5,
     maxZoom: 8,
-    attribution: '<a href="http://mapbox.com/about/maps/">Terms &amp; Conditions</a>'
+    attribution: '<a href="http://openstreetmap.org/copyright">Map &copy; OpenStreetMap</a>'
 }).addTo(overview_map);
 
 var lineGroup = L.featureGroup().addTo(map);
@@ -46,6 +44,12 @@ var queue = [];
 map.attributionControl.setPrefix('');
 overview_map.attributionControl.setPrefix('');
 
+var bboxChina = new L.LatLngBounds(
+        new L.LatLng(+excludeChinaString[0], +excludeChinaString[1]),
+        new L.LatLng(+excludeChinaString[2], +excludeChinaString[3]));
+var bboxJapan = new L.LatLngBounds(
+        new L.LatLng(+excludeJapanString[0], +excludeJapanString[1]),
+        new L.LatLng(+excludeJapanString[2], +excludeJapanString[3]));
 var bbox = new L.LatLngBounds(
         new L.LatLng(+bboxString[0], +bboxString[1]),
         new L.LatLng(+bboxString[2], +bboxString[3]));
@@ -86,15 +90,16 @@ function showComment(id) {
     });
 }
 
-var runSpeed = 2000;
+var runSpeed = 3000;
 
 // The number of changes to show per minute
 osmStream.runFn(function(err, data) {
     queue = _.filter(data, function(f) {
-        return f.feature && f.feature.type === 'way' &&
-            (bbox.intersects(new L.LatLngBounds(
+        if (!(f.feature && f.feature.type === 'way')) return false;
+        var featureBBox = new L.LatLngBounds(
                 new L.LatLng(f.feature.bounds[0], f.feature.bounds[1]),
-                new L.LatLng(f.feature.bounds[2], f.feature.bounds[3])))) &&
+                new L.LatLng(f.feature.bounds[2], f.feature.bounds[3]));
+        return (bbox.intersects(featureBBox) && !bboxChina.contains(featureBBox) && !bboxJapan.contains(featureBBox)) &&
             f.feature.linestring &&
             moment(f.meta.timestamp).format("MMM Do YY") === moment().format("MMM Do YY") &&
             ignore.indexOf(f.meta.user) === -1 &&
@@ -104,7 +109,6 @@ osmStream.runFn(function(err, data) {
             (+new Date(a.meta.tilestamp));
     });
     // if (queue.length > 2000) queue = queue.slice(0, 2000);
-    runSpeed = 1500;
 });
 
 function doDrawWay() {
@@ -177,7 +181,7 @@ function drawWay(change, cb) {
     }
     // This is a bit lower than 3000 because we want the whole way
     // to stay on the screen for a bit before moving on.
-    var perPt = runSpeed / way.linestring.length;
+    var perPt = runSpeed / (2 * way.linestring.length);
 
     function drawPt(pt) {
         newLine.addLatLng(pt);
@@ -186,7 +190,7 @@ function drawWay(change, cb) {
                 drawPt(way.linestring.pop());
             }, perPt);
         } else {
-            window.setTimeout(cb, perPt * 2);
+            window.setTimeout(cb, runSpeed / 2);
         }
     }
 

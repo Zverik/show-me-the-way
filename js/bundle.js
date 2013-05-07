@@ -1,14 +1,12 @@
-;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
+;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 var osmStream = require('osm-stream'),
     reqwest = require('reqwest'),
     moment = require('moment'),
     _ = require('underscore');
 
-var bboxString = ["-90.0", "-180.0", "90.0", "180.0"];
-if (location.hash) {
-    bboxString = location.hash.replace('#', '').split(',');
-}
-
+var bboxString = ["42.5", "27.58", "78.0", "180.0"];
+var excludeChinaString = ["42.0", "49.46", "49.26", "130.87"];
+var excludeJapanString = ["42.0", "138.83", "45.65", "145.35"];
 var ignore = ['bot-mode'];
 var BING_KEY = 'Arzdiw4nlOJzRwOz__qailc8NiR31Tt51dN2D7cm57NrnceZnCpgOkmJhNpGoppU';
 
@@ -18,7 +16,7 @@ var map = L.map('map', {
     scrollWheelZoom: false,
     doubleClickZoom: false,
     boxZoom: false
-}).setView([51.505, -0.09], 13);
+}).setView([55.75, 37.61], 14);
 
 var overview_map = L.map('overview_map', {
     zoomControl: false,
@@ -27,14 +25,14 @@ var overview_map = L.map('overview_map', {
     scrollWheelZoom: false,
     doubleClickZoom: false,
     boxZoom: false
-}).setView([51.505, -0.09], 1);
+}).setView([55.75, 37.61], 1);
 
 var bing = new L.BingLayer(BING_KEY, 'Aerial').addTo(map);
 
-var osm = new L.TileLayer('http://a.tiles.mapbox.com/v3/saman.map-f8nluy8d/{z}/{x}/{y}.jpg70', {
-    minZoom: 4,
+var osm = new L.TileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    minZoom: 5,
     maxZoom: 8,
-    attribution: '<a href="http://mapbox.com/about/maps/">Terms &amp; Conditions</a>'
+    attribution: '<a href="http://openstreetmap.org/copyright">Map &copy; OpenStreetMap</a>'
 }).addTo(overview_map);
 
 var lineGroup = L.featureGroup().addTo(map);
@@ -47,6 +45,12 @@ var queue = [];
 map.attributionControl.setPrefix('');
 overview_map.attributionControl.setPrefix('');
 
+var bboxChina = new L.LatLngBounds(
+        new L.LatLng(+excludeChinaString[0], +excludeChinaString[1]),
+        new L.LatLng(+excludeChinaString[2], +excludeChinaString[3]));
+var bboxJapan = new L.LatLngBounds(
+        new L.LatLng(+excludeJapanString[0], +excludeJapanString[1]),
+        new L.LatLng(+excludeJapanString[2], +excludeJapanString[3]));
 var bbox = new L.LatLngBounds(
         new L.LatLng(+bboxString[0], +bboxString[1]),
         new L.LatLng(+bboxString[2], +bboxString[3]));
@@ -87,15 +91,16 @@ function showComment(id) {
     });
 }
 
-var runSpeed = 2000;
+var runSpeed = 3000;
 
 // The number of changes to show per minute
 osmStream.runFn(function(err, data) {
     queue = _.filter(data, function(f) {
-        return f.feature && f.feature.type === 'way' &&
-            (bbox.intersects(new L.LatLngBounds(
+        if (!(f.feature && f.feature.type === 'way')) return false;
+        var featureBBox = new L.LatLngBounds(
                 new L.LatLng(f.feature.bounds[0], f.feature.bounds[1]),
-                new L.LatLng(f.feature.bounds[2], f.feature.bounds[3])))) &&
+                new L.LatLng(f.feature.bounds[2], f.feature.bounds[3]));
+        return (bbox.intersects(featureBBox) && !bboxChina.contains(featureBBox) && !bboxJapan.contains(featureBBox)) &&
             f.feature.linestring &&
             moment(f.meta.timestamp).format("MMM Do YY") === moment().format("MMM Do YY") &&
             ignore.indexOf(f.meta.user) === -1 &&
@@ -105,7 +110,6 @@ osmStream.runFn(function(err, data) {
             (+new Date(a.meta.tilestamp));
     });
     // if (queue.length > 2000) queue = queue.slice(0, 2000);
-    runSpeed = 1500;
 });
 
 function doDrawWay() {
@@ -178,7 +182,7 @@ function drawWay(change, cb) {
     }
     // This is a bit lower than 3000 because we want the whole way
     // to stay on the screen for a bit before moving on.
-    var perPt = runSpeed / way.linestring.length;
+    var perPt = runSpeed / (2 * way.linestring.length);
 
     function drawPt(pt) {
         newLine.addLatLng(pt);
@@ -187,7 +191,7 @@ function drawWay(change, cb) {
                 drawPt(way.linestring.pop());
             }, perPt);
         } else {
-            window.setTimeout(cb, perPt * 2);
+            window.setTimeout(cb, runSpeed / 2);
         }
     }
 
@@ -679,28 +683,56 @@ doDrawWay();
     return fn.apply(null, args)
   }
 
-  reqwest.toQueryString = function (o) {
-    var qs = '', i
+  reqwest.toQueryString = function (o, trad) {
+    var prefix, i
+      , traditional = trad || false
+      , s = []
       , enc = encodeURIComponent
-      , push = function (k, v) {
-          qs += enc(k) + '=' + enc(v) + '&'
+      , add = function (key, value) {
+          // If value is a function, invoke it and return its value
+          value = ('function' === typeof value) ? value() : (value == null ? '' : value)
+          s[s.length] = enc(key) + '=' + enc(value)
         }
-      , k, v
-
+    // If an array was passed in, assume that it is an array of form elements.
     if (isArray(o)) {
-      for (i = 0; o && i < o.length; i++) push(o[i].name, o[i].value)
+      for (i = 0; o && i < o.length; i++) add(o[i].name, o[i].value)
     } else {
-      for (k in o) {
-        if (!Object.hasOwnProperty.call(o, k)) continue
-        v = o[k]
-        if (isArray(v)) {
-          for (i = 0; i < v.length; i++) push(k, v[i])
-        } else push(k, o[k])
+      // If traditional, encode the "old" way (the way 1.3.2 or older
+      // did it), otherwise encode params recursively.
+      for (prefix in o) {
+        buildParams(prefix, o[prefix], traditional, add)
       }
     }
 
     // spaces should be + according to spec
-    return qs.replace(/&$/, '').replace(/%20/g, '+')
+    return s.join('&').replace(/%20/g, '+')
+  }
+
+  function buildParams(prefix, obj, traditional, add) {
+    var name, i, v
+      , rbracket = /\[\]$/
+
+    if (isArray(obj)) {
+      // Serialize array item.
+      for (i = 0; obj && i < obj.length; i++) {
+        v = obj[i]
+        if (traditional || rbracket.test(prefix)) {
+          // Treat each array item as a scalar.
+          add(prefix, v)
+        } else {
+          buildParams(prefix + '[' + (typeof v === 'object' ? i : '') + ']', v, traditional, add)
+        }
+      }
+    } else if (obj.toString() === '[object Object]') {
+      // Serialize object item.
+      for (name in obj) {
+        buildParams(prefix + '[' + name + ']', obj[name], traditional, add)
+      }
+
+    } else {
+      // Serialize scalar item.
+      add(prefix, obj)
+    }
   }
 
   reqwest.getcallbackPrefix = function () {
@@ -3420,9 +3452,8 @@ var osmStream = (function osmMinutely() {
     function parseNode(x) {
         if (!x) return undefined;
         var o = meta(x);
-        var bounds, tgs;
         if (o.type === 'way') {
-            bounds = get(x, ['bounds']);
+            var bounds = get(x, ['bounds']);
             o.bounds = [
                 +bounds.getAttribute('maxlat'),
                 +bounds.getAttribute('maxlon'),
@@ -3441,20 +3472,7 @@ var osmStream = (function osmMinutely() {
                 o.linestring = nodes;
             }
 
-            tgs = x.getElementsByTagName('tag');
-            var tags = {};
-            for (var j = 0; j < tgs.length; j++) {
-                tags[tgs[j].getAttribute("k")] = tgs[j].getAttribute("v");
-            }
-            o.tags = tags;
-        } else if (o.type === 'node') {
-            o.bounds = [
-                +x.getAttribute('lat'),
-                +x.getAttribute('lon'),
-                +x.getAttribute('lat'),
-                +x.getAttribute('lon')];
-
-            tgs = x.getElementsByTagName('tag');
+            var tgs = x.getElementsByTagName('tag');
             var tags = {};
             for (var j = 0; j < tgs.length; j++) {
                 tags[tgs[j].getAttribute("k")] = tgs[j].getAttribute("v");
@@ -4213,7 +4231,7 @@ function through (write, end, opts) {
   write = write || function (data) { this.queue(data) }
   end = end || function () { this.queue(null) }
 
-  var ended = false, destroyed = false, buffer = []
+  var ended = false, destroyed = false, buffer = [], _ended = false
   var stream = new Stream()
   stream.readable = stream.writable = true
   stream.paused = false
@@ -4237,6 +4255,9 @@ function through (write, end, opts) {
   }
 
   stream.queue = stream.push = function (data) {
+//    console.error(ended)
+    if(_ended) return stream
+    if(data == null) _ended = true
     buffer.push(data)
     drain()
     return stream
