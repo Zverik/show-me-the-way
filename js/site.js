@@ -54,17 +54,31 @@ var bbox = new L.LatLngBounds(
         new L.LatLng(+bboxString[0], +bboxString[1]),
         new L.LatLng(+bboxString[2], +bboxString[3]));
 
-changeset_info.innerHTML = '<div class="loading">загружаю...</div>';
+changeset_info.innerHTML = '<div class="loading">ждём правок...</div>';
 
 function showLocation(ll) {
     var nominatim_tmpl = 'http://nominatim.openstreetmap.org/reverse?format=json' +
-        '&lat={lat}&lon={lon}&zoom=5';
+        '&lat={lat}&lon={lon}&zoom=14&accept-language=ru';
     reqwest({
         url: nominatim_tmpl.replace('{lat}', ll.lat).replace('{lon}', ll.lng),
         type: 'json'
     }, function(resp) {
-        document.getElementById('reverse-location').innerHTML =
-            '' + resp.display_name + '';
+        var addr = '';
+        if (resp.address ) {
+            // country (if not Russia), state, county/state_district, hamlet/village/town/city
+            if (resp.address.hamlet) addr += '' + resp.address.hamlet + ', ';
+            else if (resp.address.village) addr += '' + resp.address.village + ', ';
+            else if (resp.address.town) addr += '' + resp.address.town + ', ';
+            else if (resp.address.city) addr += '' + resp.address.city + ', ';
+            if (resp.address.county && resp.address.county !== resp.address.town && resp.address.county !== resp.address.city)
+                addr += '' + resp.address.county + ', ';
+            else if (resp.address.state_district) addr += '' + resp.address.state_district + ', ';
+            if (resp.address.state) addr += '' + resp.address.state + ', ';
+            if (resp.address.country_code !== 'ru') addr += '' + resp.address.country;
+            if (addr.substring(addr.length - 2) === ', ') addr = addr.substring(0, addr.length - 2);
+        } else
+            addr = '' + resp.display_name + '';
+        document.getElementById('reverse-location').innerHTML = addr;
     });
 }
 
