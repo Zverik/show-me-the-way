@@ -31,7 +31,7 @@ var bing = new L.BingLayer(BING_KEY, 'Aerial').addTo(map);
 var osm = new L.TileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     minZoom: 5,
     maxZoom: 8,
-    attribution: '<a href="http://openstreetmap.org/copyright">Map &copy; OpenStreetMap</a>'
+    attribution: '<a href="http://openstreetmap.org/copyright">Карта &copy; OpenStreetMap</a>'
 }).addTo(overview_map);
 
 var lineGroup = L.featureGroup().addTo(map);
@@ -54,7 +54,7 @@ var bbox = new L.LatLngBounds(
         new L.LatLng(+bboxString[0], +bboxString[1]),
         new L.LatLng(+bboxString[2], +bboxString[3]));
 
-changeset_info.innerHTML = '<div class="loading">loading...</div>';
+changeset_info.innerHTML = '<div class="loading">загружаю...</div>';
 
 function showLocation(ll) {
     var nominatim_tmpl = 'http://nominatim.openstreetmap.org/reverse?format=json' +
@@ -86,7 +86,7 @@ function showComment(id) {
                 editor = tags[i].getAttribute('v').substring(0, 50);
             }
         }
-        document.getElementById('comment').innerHTML = comment + ' in ' + editor;
+        document.getElementById('comment').innerHTML = comment + ' в ' + editor;
     });
 }
 
@@ -142,7 +142,7 @@ function setTagText(change) {
             return change;
         }
     }
-    change.tagtext = 'a way';
+    change.tagtext = 'линию';
     return change;
 }
 

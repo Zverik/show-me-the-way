@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Show Me The Way</title>
+    <title>Show Me The Way in Russia</title>
     <meta charset='utf-8' />
     <link rel='stylesheet' href='http://cdn.leafletjs.com/leaflet-0.5/leaflet.css' />
     <link rel='stylesheet' href='css/style.css' />
@@ -23,7 +23,7 @@
     <a href='http://openstreetmap.org/' class='byosm'></a>
 </div>
     <script id='changeset-template' type='template'>
-<% var past_tense = { modify: 'modified', create: 'created', 'delete': 'deleted' }; %>
+<% var past_tense = { modify: 'поправил', create: 'нарисовал', 'delete': 'удалил' }; %>
 <p><a target='_blank' href='//osm.org/browse/changeset/<%=change.meta.changeset%>'><%=change.timetext%></a> <a target='_blank' href='//osm.org/user/<%= change.meta.user %>'><%= change.meta.user %></a>
      <%= past_tense[change.type] %> <a target='_blank' href='//osm.org/browse/<%= change.meta.type %>/<%= change.meta.id %>'><%= change.tagtext %></a>
     </p>
@@ -31,5 +31,6 @@
     <script src='http://cdn.leafletjs.com/leaflet-0.5/leaflet.js'></script>
     <script src='js/Bing.js'></script>
     <script src='js/bundle.js'></script>
+    <script src='js/moment-ru.js'></script>
 </body>
 </html>
