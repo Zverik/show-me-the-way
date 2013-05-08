@@ -61,6 +61,7 @@ function showLocation(ll) {
         '&lat={lat}&lon={lon}&zoom=14&accept-language=ru';
     reqwest({
         url: nominatim_tmpl.replace('{lat}', ll.lat).replace('{lon}', ll.lng),
+        crossOrigin: true,
         type: 'json'
     }, function(resp) {
         var addr = '';
@@ -87,6 +88,7 @@ function showComment(id) {
     reqwest({
         url: changeset_url_tmpl
             .replace('{id}', id),
+        crossOrigin: true,
         type: 'xml'
     }, function(resp) {
         var tags = resp.getElementsByTagName('tag');
