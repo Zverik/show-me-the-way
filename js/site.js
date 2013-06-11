@@ -56,6 +56,16 @@ var bbox = new L.LatLngBounds(
 
 changeset_info.innerHTML = '<div class="loading">ждём правок...</div>';
 
+var lastLocation = L.latLng(0, 0);
+
+function farFromLast(c) {
+    try {
+        return lastLocation.distanceTo(c) > 1000;
+    } finally {
+        lastLocation = c;
+    }
+}
+
 function showLocation(ll) {
     var nominatim_tmpl = 'http://nominatim.openstreetmap.org/reverse?format=json' +
         '&lat={lat}&lon={lon}&zoom=14&accept-language=ru';
@@ -172,7 +182,7 @@ function drawWay(change, cb) {
         new L.LatLng(way.bounds[2], way.bounds[3]),
         new L.LatLng(way.bounds[0], way.bounds[1]));
 
-    showLocation(bounds.getCenter());
+    if (farFromLast(bounds.getCenter())) showLocation(bounds.getCenter());
     showComment(way.changeset);
 
     var timedate = moment(change.meta.timestamp);
