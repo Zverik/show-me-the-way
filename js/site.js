@@ -137,6 +137,16 @@ osmStream.runFn(function(err, data) {
     // if (queue.length > 2000) queue = queue.slice(0, 2000);
 });
 
+bing.on('offset', function(data) {
+    var offset = data.found && data.distance > 0.1,
+        qsize = document.getElementById('queuesize'),
+        qsizeHTML = qsize.innerHTML;
+    if( offset && qsizeHTML.indexOf('.') < 0 )
+        qsize.innerHTML = qsizeHTML + '.';
+    else if( !offset && qsizeHTML.indexOf('.') >= 0 )
+        qsize.innerHTML = qsizeHTML.substring(0, qsizeHTML.indefOf('.'));
+});
+
 function doDrawWay() {
     document.getElementById('queuesize').innerHTML = queue.length;
     if (queue.length) {
