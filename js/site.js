@@ -148,7 +148,9 @@ bing.on('offset', function(data) {
 });
 
 function doDrawWay() {
-    document.getElementById('queuesize').innerHTML = queue.length;
+    var qsize = document.getElementById('queuesize'),
+        isOffset = qsize.innerHTML.indexOf('.');
+    qsize.innerHTML = queue.length + (isOffset ? '.' : '');
     if (queue.length) {
         drawWay(queue.pop(), function() {
             doDrawWay();
