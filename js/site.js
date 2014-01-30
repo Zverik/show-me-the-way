@@ -28,10 +28,10 @@ var overview_map = L.map('overview_map', {
 
 var bing = new L.BingLayer(BING_KEY, 'Aerial').addTo(map);
 
-var osm = new L.TileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+var osm = new L.TileLayer('http://openmapsurfer.uni-hd.de/tiles/roads/x={x}&y={y}&z={z}', {
     minZoom: 5,
     maxZoom: 8,
-    attribution: '<a href="http://openstreetmap.org/copyright">Карта &copy; OpenStreetMap</a>'
+    attribution: 'Карта &copy; <a href="http://openstreetmap.org/">OpenStreetMap</a> | Тайлы &copy <a href=\"http://giscience.uni-hd.de/\">GIScience Heidelberg</a>'
 }).addTo(overview_map);
 
 var lineGroup = L.featureGroup().addTo(map);
