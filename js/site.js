@@ -66,6 +66,16 @@ function farFromLast(c) {
     }
 }
 
+var lastLocation = L.latLng(0, 0);
+
+function farFromLast(c) {
+    try {
+        return lastLocation.distanceTo(c) > 1000;
+    } finally {
+        lastLocation = c;
+    }
+}
+
 function showLocation(ll) {
     var nominatim_tmpl = 'http://nominatim.openstreetmap.org/reverse?format=json' +
         '&lat={lat}&lon={lon}&zoom=14&accept-language=ru';
