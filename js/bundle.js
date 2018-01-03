@@ -3452,7 +3452,7 @@ var osmStream = (function osmMinutely() {
 
     // presets
     var baseUrl = 'http://overpass-api.de/',
-        minuteStatePath = 'augmented_diffs/state.txt',
+        minuteStatePath = 'api/augmented_diff_status',
         changePath = 'api/augmented_diff?';
 
     function minuteStateUrl() {
